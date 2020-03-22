@@ -32,7 +32,7 @@ List all files and directories (and go one level deeper into these directories) 
 
 The output of that command should look like:
 ```bash
-cavity/0
+cavity/0:
   U  p
 
 cavity/constant:
@@ -42,7 +42,7 @@ cavity/system:
   controlDict  fvSchemes fvSolution
 ```
 
-I want now to look inside each file (in this order) and answer the following questions:
+I want you now to look inside each file (in this order) and answer the following questions:
 
 ### Main variables
 
@@ -60,7 +60,7 @@ We can see that there are pressure (p) and velocity (U) dictionaries in `cavity/
    - `volScalarField` => phase saturation (alpha), ...
    - `volVectorField` => position of mesh cell centers, ...
    - `surfaceScalarField`=> phase flux (phi), ...
-7. Is the 3D coordinates of mesh points form a `volVectorField`?
+7. Do the 3D coordinates of mesh points form a `volVectorField`?
 8. Pick the right mathematical representation of the boundary condition for `U` 
    (as specified in the `cavity/0/U` file) for the `movingWall` patch
    - [ ] for each boundary face b, 
@@ -91,7 +91,7 @@ Based on the command output *only*,
 4. These boundary faces are assembled into 3 boundary patches, order the following face "groups"
    according to their starting face:
    - movingWall patch faces;
-   - fixedWall patch faces;
+   - fixedWalls patch faces;
    - frontAndBack patch faces;
    - Internal faces;
    
@@ -128,7 +128,7 @@ and answer the following questions:
    Which "linear solver" is associated with each solved-for variable?
    
 > PCG: Preconditioned Conjugate, 
-> Bi-PCG-Stab: Stabilized Bi-PCG, but these may differ accross OpenfOAM versions/forks
+> Bi-PCG-Stab: Stabilized Bi-PCG, but these may differ accross OpenFOAM versions/forks
 
 Now we get to the `cavity/system/controlDict` file,
 
@@ -140,9 +140,11 @@ Now we get to the `cavity/system/controlDict` file,
 7. What is the class of the `controlDict` object?
 
 At this point, you should be ready to meddle with the case, and we classify that as intermediate-skills.
-To keep things clean you should remove the generated mesh (execute this in case directory; which is $FOAM_RUN/cavity):
+To keep things clean you should remove the generated mesh (execute this in case directory; which is `$FOAM_RUN/cavity`):
 
+```bash
 > foamCleanTutorials
+```
 
 ## Intermediate-level skills
 
@@ -166,14 +168,14 @@ Switch to `cavity/constant/polyMesh/boundary`.
 3. Boundary patches are specified as:
    - [ ] a dictionary of face lists
    - [ ] a list of dictionaries
-   - [ ] an array of dictionaries
+   - [ ] or, an array of dictionaries
    
 4. What is the index of "fixedWalls" patch? (Indexing also starts from 0 here)
 
 Check `cavity/constant/polyMesh/faces`
 
 5. A mesh face is defined using vertex **labels**. `4(0 1 2 3)` means a quad of vertices 0,1,2,3 
-   (in manifold ordering). Assume all faces defined in this file are quads, can deduce cells geometry?
+   (in manifold ordering). Assume all faces defined in this file are quads, can you deduce cells geometry?
    Check it in `checkMesh` output.
 
 To illustrate the importance of checking mesh quality, let's modify a mesh file and see what happens:
@@ -185,7 +187,7 @@ This virtually means we are increasing the number of faces for this patch withou
 > This notation: `fixedWalls.nFaces` means look for the keyword (or sub-dictionary) "nFaces" inside the dictionary
 > "fixedWalls".
 
-Now run `checkMesh` and look for lines in thet output starting with "***" 
+Now run `checkMesh` and look for lines in its output starting with "***" 
 (The following also displays lines that start with "Mesh"):
 
 ```bash
@@ -201,17 +203,17 @@ But hey, `checkMesh` still says it's OK to proceed with the simulation, so we'll
 icoFoam
 ```
 
-`icoFoam` is the suitable solver for this particular case. Note that solver runs fine, with continuity errors of
+`icoFoam` is the suitable solver for this particular case. Note that the solver runs fine, with continuity errors of
 order 1e-20 and everything!
 
 What I want you now to do is to visualize the generating mesh using ParaView:
 
-> Note that there are much better ways to do this, but we'll live with this method for now :smile:
+> There are much better ways to do this, but we'll live with this method for now :smile:
 
 ```bash
 # On the server (inside docker container, in cavity directory)
 # Create an empty foam file (For ParaView)
-> touch cavity.cavity
+> touch cavity.foam
 # Compress the case
 > tar -czvf myCavity.tar.gz .
 # Upload the case to transfer.sh (for example)
@@ -225,22 +227,23 @@ There you go, errors?
 
 **The end face number 840 of patch fixedWalls is not consistent with the start face number 840 of patch frontAndBack**
 
-ParaView explicitely tells us face whose index is 840 belongs to both patches! the OpenFOAM solver we used had no problem
-running in such shady condition.
+ParaView explicitely tells us that the face whose index is 840 belongs to both patches! 
+The OpenFOAM solver we used had no problem running in such shady conditions.
 
 **Things to take:**
-- OpenFOAM has this nice feature of "**what comes last wins**"!! Our configuration made face 840 belong to two patches but 
+- OpenFOAM has this nice-n-convenient feature of "**what comes last wins**"!! 
+  Our configuration made face 840 belong to two patches but 
   it appears OpenFOAM allocates the face to the last patch (frontAndBack) and we were lucky it was the correct action.
 - Don't take liberty in modifying case files carelessly, you'll cause yourself some serious headacke.
 
-Changing that 61 to 60 in `constant/polyMesh/boundary` again allows for result visualization. No difference in the solution
+Changing that 61 back to 60 in `constant/polyMesh/boundary` allows for result visualization. No difference in the solution
 is noticed.
 
 > Don't forget to clean up the case: `foamCleanTutorials`
 
-### Macro expansion in OpenFOAM file
+### Macro expansion in OpenFOAM files
 
-Inside OpenFOAM dictionaries you can use a variable multiple time if you define it a keyword:
+Inside OpenFOAM dictionaries you can use a single keyword multiple time as the value of another keyword:
 
 ```cpp
 someVar     0;
@@ -249,7 +252,7 @@ someDict
   someKeyword  $someVar;
 }
 ```
-Then, `someDict.someKeyword` would have the value of 5.
+Then, `someDict.someKeyword` would have the value of 0.
 
 In `cavity/0/U` dictionary, the keyword `internalField` is already defined and has a value of `uniform (0 0 0)`.
 Use it to assign the same value to the `boundaryField.fixedWalls.value` keyword.
