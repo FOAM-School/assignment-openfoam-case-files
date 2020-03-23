@@ -306,3 +306,37 @@ writeControl    timeStep;
 writeInterval   20;
 ```
 
+### Regular Expressions
+
+Notice that patches `movingWall` and `fixedWalls` have the same boundary condition type in `cavity/0/p`: `type   zeroGradient;`. Let's use regular expressions to specify this type for both patches at once (instead of having two separate dictionaries).
+
+A dictionary name can be a "pattern" instead of a literal string. In the context of OpenFOAM patterns:
+- `.` (a dot) denotes **any** single character.
+- `*` (a star) denotes repeating the previous character zero or more times; so `a*` would match `a`, `aa`, `aaa` ... etc.
+- Of course, alpha-numeric characters represent themselves literally (the case of `a` in the previous example).
+- The pipe `|` character represents or: `(a|b)` matches both `a` and `b` but doesn't match `ab`, `ba` ... etc.
+  (parenthesis are using for grouping).
+- Hence, to test for an optional character, we use `(|a)b` (matches both `b` and `ab`).
+- Regular expression are case sensitive.
+
+Assume one wants to specify the PCG linear solver for all pressure-related fields 
+(say there are `p`, `p_rgh`, `pc` and `water.p` fields, it's a bit of a stretch).
+
+The following solvers dictionary (goes in `system/fvSolution`):
+```cpp
+solvers
+{
+  "p.*" 
+  { 
+    solver  PCG;
+    .... // Other relevant stuff
+  }
+}
+```
+would match `p`, `p_rgh`, `pc` but not `water.p` because `p.*` matches the character "p" literally, then 
+any character repeated any number of times. To match the `water.` before the `p` char, we can write `(|water.)p.*` 
+instead.
+
+> Note that also `.*p.*` works but it's too general (selects all fields which have a "p" in the name).
+
+5. Try to find a working regular expression to match both `movingWall` and`fixedWalls`.
