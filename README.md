@@ -255,4 +255,54 @@ someDict
 Then, `someDict.someKeyword` would have the value of 0.
 
 In `cavity/0/U` dictionary, the keyword `internalField` is already defined and has a value of `uniform (0 0 0)`.
-Use it to assign the same value to the `boundaryField.fixedWalls.value` keyword.
+Use it to assign the same value to the `boundaryField.fixedWalls.value` keyword (run icoFoam again to check that your solution works).
+
+## Advanced-level skills
+
+From a clean state of the cavity case, run the `blackMesh && icoFoam` to generate some time directories.
+Idealy you'll get new directories named: **0.1**, **0.2**, **0.3**, **0.4** and **0.5** in few seconds.
+
+We pick the last one for illustation ("0.5" directory).
+
+You can see that, in addition to `p` and `U` dictionaries, there is a `phi` file and a `unifrom` directory.
+
+### Phase flux
+
+The `cavity/0.5/phi` file represents the phase face-flux (Check the dimensions).
+
+1. What is its class?
+2. You already know how to specify a uniform value for `internalField` (in this case, internal faces).
+   This file teaches you how a non-uniform list of scalar values looks like.
+   Is the size of the provided list consistent with the number of internal faces? (use `checkMesh` for mesh stats).
+
+> You wouldn't normally write list of thousands of scalars of vector to initialize your fields,
+> there are some utilities for such tasks.
+
+3. The flux list is associated with faces list (from `cavity/constant/polyMesh/faces`), so face 0 is associated 
+   with the first entry in the flux list (1.42189e-08 for me). Compare the last few flux values from `0.5/phi` and `0.1/phi`
+   for example. Is there regions of the mesh where the fluid remained static for the whole simulation time?
+
+Note that flux values at mesh boundaries are **calculated** (from internal faces/cells).
+
+### Time in OpenFOAM
+ 
+Try looking at `uniform/time` inside different time directories and fill the following table.
+
+| Simulation Time (in seconds)          | **0**         | **0.1** | **0.3**  |  **0.5**  |
+| ------------------------------------- |:-------------:| :------:| :-------:| :--------:|
+| DeltaT at current time                | 0.005 | | | |
+| Initial DeltaT                        | 0.005 | 0.005 | 0.005 | 0.005 |
+| Time index (starts from 0)            | 0     | | | |
+
+**Some Explanation:**
+- DeltaT is the difference between current simulation time and the next one (simulation time would evolve as 0, 0.005s, 
+  0.01s, ... etc, if a `deltaT = 0.005s` is chosen).
+- Time index is the time "label" starting from 0 (in the previous example, time = 0.005s would have index 1, time = 0.01s would have index 2, ... etc)
+
+4. Do you think the above table reflects the output settings set in `cavity/system/controlDict`?
+```cpp
+// Writing results to time diretories every 20 timesteps
+writeControl    timeStep;
+writeInterval   20;
+```
+
